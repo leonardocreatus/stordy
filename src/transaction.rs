@@ -19,7 +19,6 @@ pub struct Transaction {
 
 impl Transaction {
    
-
     pub fn encode(&self) -> Vec<u8> {
       let transaction = transaction::Transaction {
         index: self.index,
