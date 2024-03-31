@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package stordy.transaction;
+package stordy.transaction.buffer;
 
-message Transaction {
+message TransactionBuffer {
   uint32 index = 1;
   string previousHash = 2;
   uint64 timestamp = 3;
@@ -12,3 +12,5 @@ message Transaction {
   string identification = 7;
   string hash = 8;
 }
+
+

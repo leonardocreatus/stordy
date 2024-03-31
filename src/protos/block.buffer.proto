@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package stordy.block.buffer;
+
+message BlockBuffer {
+  uint32 index = 1;
+  string previous_hash = 2;
+  uint64 timestamp = 3;
+  string hash = 4;
+  uint32 nonce = 5;
+  string public_key = 6;
+  string block_context = 7;
+  string device = 8;
+  string previous_expired_block_hash = 9;
+  string previous_block_signature = 10;  
+}
