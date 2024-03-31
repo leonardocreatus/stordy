@@ -69,7 +69,7 @@ impl Interface for GRPCBlock {
     Ok(Response::new(blk))
   }
 
-  async fn length(&self, request: Request<block::LengthRequest>) -> Result<Response<block::LengthReply>, Status> {
+  async fn length_block(&self, request: Request<block::LengthRequest>) -> Result<Response<block::LengthReply>, Status> {
     let length = 0;
     let response = block::LengthReply {
       length

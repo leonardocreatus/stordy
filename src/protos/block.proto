@@ -5,7 +5,7 @@ package stordy.block;
 service Interface {
   rpc AddBlock(Block) returns (Empty) {}
   rpc FindBlockByHash(FindBlockByHashRequest) returns (Block) {}
-  rpc Length(LengthRequest) returns (LengthReply) {}
+  rpc LengthBlock(LengthRequest) returns (LengthReply) {}
 }
 
 message Empty { }
