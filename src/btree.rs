@@ -1,5 +1,7 @@
 
 
+
+
 pub struct BTree {
   db: sled::Db,
 }
@@ -16,7 +18,7 @@ impl BTree {
     self.db.insert(key, value).unwrap();
   }
 
-  pub fn get(&self, key: String) -> Optional<Vec<u8>> {
+  pub fn get(&self, key: String) -> Option<Vec<u8>> {
     match self.db.get(key).unwrap() {
       Some(value) => Some(value.to_vec()),
       None => None,
