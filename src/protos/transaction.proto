@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package stordy.transaction;
 
-service Interface {
+service TransactionService {
   rpc AddTransaction(AddTransactionRequest) returns (Empty) {}
   rpc FindTransactionByHash(FindTransactionByHashRequest) returns (Transaction) {}
   rpc ExistsTransactionOnBlock(ExistsTransactionOnBlockRequet) returns (ExistsTransactionOnBlockReply) {}
