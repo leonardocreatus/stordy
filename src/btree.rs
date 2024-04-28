@@ -7,8 +7,8 @@ pub struct BTree {
 }
 
 impl BTree {
-  pub fn new() -> BTree {
-    let db: sled::Db = sled::open("my_db").unwrap();
+  pub fn new(path: &str) -> BTree {
+    let db: sled::Db = sled::open(path).unwrap();
     BTree {
       db,
     }
@@ -24,4 +24,28 @@ impl BTree {
       None => None,
     }
   }
+
+  pub fn get_last(&self) -> Option<(String, Vec<u8>)> {
+    let last = self.db.iter().last();
+    if !last.is_some() {
+      return None;
+    }
+
+    let last = last.unwrap();
+    match last {
+      Ok((key, value)) => Some((String::from_utf8(key.to_vec()).unwrap(), value.to_vec())),
+      _ => None,
+    }
+
+  }
+
+  pub fn len(&self) -> usize {
+    self.db.len()
+  }
+
+  pub fn iter(&self) -> sled::Iter {
+    self.db.iter()
+  }
+
+
 }

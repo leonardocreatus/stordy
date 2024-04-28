@@ -16,13 +16,15 @@ pub mod transaction {
 }
 
 pub struct Transaction {
-  db: Arc<Mutex<BTree>>
+  db_block: Arc<Mutex<BTree>>,
+  db_transaction: Arc<Mutex<BTree>>,
 }
 
 impl Transaction {
-  pub fn new(db: Arc<Mutex<BTree>>) -> Self {
+  pub fn new(db_block: Arc<Mutex<BTree>>, db_transaction: Arc<Mutex<BTree>>) -> Self {
     Transaction {
-      db,
+      db_block,
+      db_transaction,
     }
   }   
 }
@@ -34,7 +36,7 @@ impl TransactionService for Transaction {
         let request = request.into_inner();
         let transaction = request.transaction.unwrap();
         let block_hash = request.block_hash;
-        let db = self.db.lock().unwrap();
+        let db = self.db_transaction.lock().unwrap();
         let id = db.get(block_hash.clone());
 
         if id.is_none() {
@@ -90,7 +92,7 @@ impl TransactionService for Transaction {
 
     async fn find_transaction_by_hash(&self, request: Request<transaction::FindTransactionByHashRequest>) -> Result<Response<transaction::Transaction>, Status> {
       let request = request.into_inner();
-      let db = self.db.lock().unwrap();
+      let db = self.db_transaction.lock().unwrap();
 
 
       let buf = db.get(request.hash.clone());
