@@ -9,14 +9,18 @@ pub mod block {
   tonic::include_proto!("stordy.block"); // The string specified here must match the proto package name
 }
 
+
+
 pub struct Block {
-  db: Arc<Mutex<BTree>>
+  db_block: Arc<Mutex<BTree>>,
+  db_transaction: Arc<Mutex<BTree>>
 }
 
 impl Block {
-  pub fn new(db: Arc<Mutex<BTree>>) -> Self {
+  pub fn new(db_block: Arc<Mutex<BTree>>, db_transaction: Arc<Mutex<BTree>>) -> Self {
     Block {
-      db,
+      db_block,
+      db_transaction
     }
   }
 }
@@ -24,15 +28,19 @@ impl Block {
 #[tonic::async_trait]
 impl BlockService for Block {
   async fn add_block(&self, request: Request<block::Block>) -> Result<Response<block::Empty>, Status> {
+
     let block = request.into_inner();
-    let db = self.db.lock().unwrap();
-    let id = db.get(block.hash.clone());
+
+    println!("Received block: {:?}", block);
+
+    let db = self.db_block.lock().unwrap();
+    let id = db.get(block.public_key.clone());
     if id.is_some() {
       return Err(Status::already_exists("Block already exists"));
     }
 
     let cuid = cuid::cuid2();
-    db.insert(block.hash.clone(), cuid.as_bytes().to_vec());
+    db.insert(block.public_key.clone(), cuid.as_bytes().to_vec());
 
     let mut buf_block =  vec![];
     block.encode(&mut buf_block).unwrap();
@@ -56,10 +64,10 @@ impl BlockService for Block {
     Ok(Response::new(block::Empty {}))
   }
 
-  async fn find_block_by_hash(&self, request: Request<block::FindBlockByHashRequest>) -> Result<Response<block::Block>,Status> {
+  async fn find_block(&self, request: Request<block::FindBlockRequest>) -> Result<Response<block::Block>,Status> {
     let request = request.into_inner();
-    let db = self.db.lock().unwrap();
-    let id = db.get(request.hash.clone());
+    let db = self.db_block.lock().unwrap();
+    let id = db.get(request.public_key.clone());
 
     if id.is_none() {
       return Err(Status::not_found("Block not found"));
@@ -74,10 +82,59 @@ impl BlockService for Block {
     Ok(Response::new(block))
   }
 
-  async fn length_block(&self, request: Request<block::LengthRequest>) -> Result<Response<block::LengthReply>, Status> {
+  async fn length_block(&self, _: Request<block::LengthRequest>) -> Result<Response<block::LengthReply>, Status> {
     let length = 0;
     let response = block::LengthReply {
       length
+    };
+
+    Ok(Response::new(response))
+  }
+
+  async fn get_last_block(&self, _: Request<block::Empty>) -> Result<Response<block::Block>, Status> {
+    let db = self.db_block.lock().unwrap();
+    let last = db.get_last();
+    
+    if last.is_none() {
+      return Err(Status::not_found("Block not found"));
+    }
+
+    let last = last.unwrap();
+    let id = last.1;
+
+    let buf = fs::read(format!("blocks/{}", String::from_utf8(id).unwrap())).unwrap();
+    let block_size = u16::from_be_bytes([buf[0], buf[1]]);
+    let block = block::Block::decode(&buf[2..block_size as usize + 2]).unwrap();
+
+    Ok(Response::new(block))
+  }
+
+  async fn length(&self, _: Request<block::Empty>) -> Result<Response<block::LengthReply>, Status> {
+    let db = self.db_block.lock().unwrap();
+    let length = db.len();
+    let response = block::LengthReply {
+      length: length as u32
+    };
+
+    Ok(Response::new(response))
+  }
+
+  async fn get_full_chain(&self, _: Request<block::Empty>) -> Result<Response<block::GetFullChainReply>, Status> {
+    let db = self.db_block.lock().unwrap();
+    let mut blocks = vec![];
+    
+    let iter = db.iter();
+    for block in iter {
+      let block = block.unwrap();
+      let id = String::from_utf8(block.1.to_vec()).unwrap();
+      let buf = fs::read(format!("blocks/{}", id)).unwrap();
+      let block_size = u16::from_be_bytes([buf[0], buf[1]]);
+      let block = block::Block::decode(&buf[2..block_size as usize + 2]).unwrap();
+      blocks.push(block)
+    }
+
+    let response = block::GetFullChainReply {
+      blocks
     };
 
     Ok(Response::new(response))

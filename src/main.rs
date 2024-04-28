@@ -11,9 +11,12 @@ use std::{fs, sync::{Arc, Mutex}, path::Path};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = "[::1]:50051".parse()?;
-    let btree = Arc::new(Mutex::new(BTree::new()));
-    let transaction = transaction::Transaction::new(Arc::clone(&btree));
-    let block = block::Block::new(Arc::clone(&btree));
+    
+    let btree_blocks = Arc::new(Mutex::new(BTree::new("blocks")));
+    let btree_transactions = Arc::new(Mutex::new(BTree::new("transactions")));
+
+    let transaction = transaction::Transaction::new(Arc::clone(&btree_blocks), Arc::clone(&btree_transactions));
+    let block = block::Block::new(Arc::clone(&btree_blocks), Arc::clone(&btree_transactions));
 
     if !Path::new("blocks").exists() {
         fs::create_dir_all("blocks").unwrap();

@@ -4,11 +4,18 @@ package stordy.block;
 
 service BlockService {
   rpc AddBlock(Block) returns (Empty) {}
-  rpc FindBlockByHash(FindBlockByHashRequest) returns (Block) {}
+  rpc FindBlock(FindBlockRequest) returns (Block) {}
   rpc LengthBlock(LengthRequest) returns (LengthReply) {}
+  rpc GetLastBlock(Empty) returns (Block) {}
+  rpc Length(Empty) returns (LengthReply) {}
+  rpc GetFullChain(Empty) returns (GetFullChainReply) {}
 }
 
 message Empty { }
+
+message GetFullChainReply {
+  repeated Block blocks = 1;
+}
 
 message Block {
   uint32 index = 1;
@@ -23,14 +30,15 @@ message Block {
   string previous_block_signature = 10;  
 }
 
-message FindBlockByHashRequest {
-  string hash = 1;
+message FindBlockRequest {
+  string public_key = 1;
 }
 
 message LengthRequest {
-  string hash  = 1;
+  string public_key  = 1;
 }
 
 message LengthReply {
   uint32 length = 1;
 }
+
