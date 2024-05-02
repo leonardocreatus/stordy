@@ -9,8 +9,6 @@ pub mod block {
   tonic::include_proto!("stordy.block"); // The string specified here must match the proto package name
 }
 
-
-
 pub struct Block {
   db_block: Arc<Mutex<BTree>>,
   db_transaction: Arc<Mutex<BTree>>

@@ -5,6 +5,7 @@ package stordy.transaction;
 service TransactionService {
   rpc AddTransaction(AddTransactionRequest) returns (Empty) {}
   rpc FindTransactionByHash(FindTransactionByHashRequest) returns (Transaction) {}
+  rpc FindLastTransaction(GetLastRequest) returns (Transaction) {}
   rpc ExistsTransactionOnBlock(ExistsTransactionOnBlockRequet) returns (ExistsTransactionOnBlockReply) {}
 }
 
@@ -25,6 +26,10 @@ message AddTransactionRequest {
 }
 
 message Empty {}
+
+message GetLastRequest{
+   string block_hash = 1;
+}
 
 message FindTransactionByHashRequest {
   string hash = 1;

@@ -6,6 +6,8 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::fs;
 
+use crate::block::Block;
+
 use self::btree::BTree;
 
 #[path = "./btree.rs"]
@@ -31,7 +33,50 @@ impl Transaction {
 
 #[tonic::async_trait]
 impl TransactionService for Transaction {
-    async fn add_transaction(&self, request: Request<transaction::AddTransactionRequest>) -> Result<Response<transaction::Empty>, Status> {
+
+  async fn find_last_transaction(&self, request: Request<transaction::GetLastRequest>) -> Result<Response<transaction::Transaction>, Status>{
+    let request = request.into_inner();
+    let db = self.db_transaction.lock().unwrap();
+    let id = db.get(request.block_hash.clone());
+
+    let id = id.unwrap();
+
+    let filename = format!("blocks/{}", String::from_utf8(id).unwrap());
+
+    
+    let buf = match fs::read(&filename) {
+        Ok(buf) => buf,
+        Err(_) => return Err(Status::internal("Error reading block file")),
+    };
+
+   
+    if buf.is_empty() {
+        return Err(Status::not_found("No transactions in the block"));
+    }
+
+    let mut offset = 0;
+    let mut last_transaction_offset = 0;
+
+    // Percorrer o bloco
+    while offset < buf.len() {
+       
+        let transaction_size = u16::from_be_bytes([buf[offset], buf[offset + 1]]); 
+        last_transaction_offset = offset;
+        offset += 2 + transaction_size as usize;
+    }
+
+    // Decodificar a última transação encontrada
+    let last_transaction_size = u16::from_be_bytes([
+        buf[last_transaction_offset],
+        buf[last_transaction_offset + 1],
+    ]);
+    let last_transaction = transaction::Transaction::decode(&buf[last_transaction_offset + 2..last_transaction_offset + 2 + last_transaction_size as usize])
+        .unwrap();
+
+    Ok(Response::new(last_transaction))
+}
+
+async fn add_transaction(&self, request: Request<transaction::AddTransactionRequest>) -> Result<Response<transaction::Empty>, Status> {
         
         let request = request.into_inner();
         let transaction = request.transaction.unwrap();
@@ -93,7 +138,7 @@ impl TransactionService for Transaction {
     async fn find_transaction_by_hash(&self, request: Request<transaction::FindTransactionByHashRequest>) -> Result<Response<transaction::Transaction>, Status> {
       let request = request.into_inner();
       let db = self.db_transaction.lock().unwrap();
-
+      
 
       let buf = db.get(request.hash.clone());
       if buf.is_none() {
@@ -121,6 +166,7 @@ impl TransactionService for Transaction {
 
       Ok(Response::new(transaction))
     }
+
 
     async fn exists_transaction_on_block(&self, request: Request<transaction::ExistsTransactionOnBlockRequet>) -> Result<Response<transaction::ExistsTransactionOnBlockReply>, Status> {
         Ok(Response::new(transaction::ExistsTransactionOnBlockReply { exists: false }))
