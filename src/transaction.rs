@@ -35,9 +35,9 @@ impl TransactionService for Transaction {
         
         let request = request.into_inner();
         let transaction = request.transaction.unwrap();
-        let block_hash = request.block_hash;
+        let block_public_key = request.block_public_key;
         let db = self.db_transaction.lock().unwrap();
-        let id = db.get(block_hash.clone());
+        let id = db.get(block_public_key.clone());
 
         if id.is_none() {
             return Err(Status::not_found("Block not found"));
@@ -60,11 +60,12 @@ impl TransactionService for Transaction {
         }
 
         let transaction_size_buf = buf_transaction.len().to_be_bytes();
-        let first_two_bytes_of_transaction_size = &transaction_size_buf.get(transaction_size_buf.len() - 2..).unwrap();
-
+        let two_bytes_of_transaction_size = &transaction_size_buf.get(transaction_size_buf.len() - 2..).unwrap();
         let mut buf = Vec::new();
-        buf.extend_from_slice(&first_two_bytes_of_transaction_size);
-        buf.extend_from_slice(&buf_transaction);  
+
+        buf.extend_from_slice(&two_bytes_of_transaction_size);
+        buf.extend_from_slice(&buf_transaction);
+        buf.extend_from_slice(&two_bytes_of_transaction_size);
 
         let id = id.unwrap();
         let filename = format!("blocks/{}", String::from_utf8(id).unwrap());
@@ -72,28 +73,60 @@ impl TransactionService for Transaction {
         let metadata = fs::metadata(filename.clone())?;
         let shift = metadata.len();
 
+        // let mut file = OpenOptions::new()
+        // .write(true)
+        // .append(true)
+        // .open(filename.clone())
+        // .unwrap();
+        
         let mut file = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open(filename.clone())
-        .unwrap();
+            .read(true)
+            .write(true)
+            .open(filename.clone())
+            .unwrap();
 
-        file.write_all(&buf).unwrap();
+        let mut fbuf = Vec::new();
+        file.read_to_end(&mut fbuf).unwrap();
+        
+        fbuf.pop();
+        fbuf.pop();
+
+        fbuf.extend_from_slice(&buf);
+        file.write_all(&fbuf).unwrap();
         
         let mut buf = Vec::new();
         buf.extend_from_slice(&shift.to_be_bytes().to_vec());
-        buf.extend_from_slice(&block_hash.as_bytes().to_vec());
-        println!("db: {:?}", buf);
+        buf.extend_from_slice(&block_public_key.as_bytes().to_vec());
 
         db.insert(transaction.hash.clone(), buf);
 
         Ok(Response::new(transaction::Empty {}))
     }
 
+
+    async fn find_last_transaction(&self, request: Request<transaction::FindLastTransactionRequest>) -> Result<Response<transaction::Transaction>, Status> {
+        
+       // let
+        let db_transaction = self.db_transaction.lock().unwrap();
+        let db_block = self.db_block.lock().unwrap();
+        let block_public_key = request.into_inner().block_public_key;
+        let block_id = db_block.get(block_public_key);
+
+        if block_id.is_none() {
+            return Err(Status::not_found("Block not found"));
+        }
+
+        let block_id = block_id.unwrap();
+        let buf = fs::read(format!("blocks/{}", String::from_utf8(block_id).unwrap())).unwrap();
+
+        Ok(Response::new(transaction::Transaction::default()))
+    }
+
     async fn find_transaction_by_hash(&self, request: Request<transaction::FindTransactionByHashRequest>) -> Result<Response<transaction::Transaction>, Status> {
       let request = request.into_inner();
       let db = self.db_transaction.lock().unwrap();
 
+        
 
       let buf = db.get(request.hash.clone());
       if buf.is_none() {
