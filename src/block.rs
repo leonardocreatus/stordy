@@ -50,11 +50,12 @@ impl BlockService for Block {
     }
 
     let block_size_buf = buf_block.len().to_be_bytes();
-    let first_two_bytes_of_block_size = &block_size_buf.get(block_size_buf.len() - 2..).unwrap(); // :set wrap linebreak | rightbelow vnew | execute "normal \<c-w>h80\<c-w>\<bar>"
-
+    let two_bytes_of_block_size = &block_size_buf.get(block_size_buf.len() - 2..).unwrap();
     let mut buf = Vec::new();
-    buf.extend_from_slice(&first_two_bytes_of_block_size);
+
+    buf.extend_from_slice(&two_bytes_of_block_size);
     buf.extend_from_slice(&buf_block);
+    buf.extend_from_slice(&two_bytes_of_block_size);
 
     let res = fs::write(format!("blocks/{}", cuid), buf);
     if res.is_err() {
