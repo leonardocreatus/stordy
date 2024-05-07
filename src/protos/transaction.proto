@@ -23,6 +23,7 @@ message Transaction {
 message AddTransactionRequest {
   string block_public_key = 1;
   Transaction transaction = 2;
+  optional int32 qtd = 3;
 }
 
 message Empty {}
@@ -32,7 +33,7 @@ message FindTransactionByHashRequest {
 }
 
 message ExistsTransactionOnBlockRequet {
-  string  block_public_key = 1;
+  string block_public_key = 1;
   string transaction_hash = 2;
 }
 
