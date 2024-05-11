@@ -78,62 +78,62 @@ impl TransactionService for Transaction {
 
 async fn add_transaction(&self, request: Request<transaction::AddTransactionRequest>) -> Result<Response<transaction::Empty>, Status> {
         
-        let request = request.into_inner();
-        let transaction = request.transaction.unwrap();
-        let block_hash = request.block_hash;
-        let db = self.db_transaction.lock().unwrap();
-        let id = db.get(block_hash.clone());
+  let request = request.into_inner();
+  let transaction = request.transaction.unwrap();
+  let block_hash = request.block_hash;
+  let db = self.db_transaction.lock().unwrap();
+  let id = db.get(block_hash.clone());
 
-        if id.is_none() {
-            return Err(Status::not_found("Block not found"));
-        }
+  if id.is_none() {
+      return Err(Status::not_found("Block not found"));
+  }
 
-        let exists_transaction = {
-            let buf = db.get(transaction.hash.clone());
-            buf.is_some()
-        };
+  let exists_transaction = {
+      let buf = db.get(transaction.hash.clone());
+      buf.is_some()
+  };
 
-        if exists_transaction {
-            return Err(Status::already_exists("Transaction already exists"));
-        }
+  if exists_transaction {
+      return Err(Status::already_exists("Transaction already exists"));
+  }
 
-        let mut buf_transaction = vec![];
-        transaction.encode(&mut buf_transaction).unwrap();
+  let mut buf_transaction = vec![];
+  transaction.encode(&mut buf_transaction).unwrap();
 
-        if buf_transaction.len() > 2u32.pow(16).try_into().unwrap() {
-            return Err(Status::invalid_argument("Transaction too large"));
-        }
+  if buf_transaction.len() > 2u32.pow(16).try_into().unwrap() {
+      return Err(Status::invalid_argument("Transaction too large"));
+  }
 
-        let transaction_size_buf = buf_transaction.len().to_be_bytes();
-        let first_two_bytes_of_transaction_size = &transaction_size_buf.get(transaction_size_buf.len() - 2..).unwrap();
+  let transaction_size_buf = buf_transaction.len().to_be_bytes();
+  let first_two_bytes_of_transaction_size = &transaction_size_buf.get(transaction_size_buf.len() - 2..).unwrap();
 
-        let mut buf = Vec::new();
-        buf.extend_from_slice(&first_two_bytes_of_transaction_size);
-        buf.extend_from_slice(&buf_transaction);  
+  let mut buf = Vec::new();
+  buf.extend_from_slice(&first_two_bytes_of_transaction_size);
+  buf.extend_from_slice(&buf_transaction);  
 
-        let id = id.unwrap();
-        let filename = format!("blocks/{}", String::from_utf8(id).unwrap());
+  let id = id.unwrap();
+  let filename = format!("blocks/{}", String::from_utf8(id).unwrap());
 
-        let metadata = fs::metadata(filename.clone())?;
-        let shift = metadata.len();
+  let metadata = fs::metadata(filename.clone())?;
+  let shift = metadata.len();
 
-        let mut file = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open(filename.clone())
-        .unwrap();
+  let mut file = OpenOptions::new()
+  .write(true)
+  .append(true)
+  .open(filename.clone())
+  .unwrap();
 
-        file.write_all(&buf).unwrap();
-        
-        let mut buf = Vec::new();
-        buf.extend_from_slice(&shift.to_be_bytes().to_vec());
-        buf.extend_from_slice(&block_hash.as_bytes().to_vec());
-        println!("db: {:?}", buf);
+  file.write_all(&buf).unwrap();
+  
+  let mut buf = Vec::new();
+  buf.extend_from_slice(&shift.to_be_bytes().to_vec());
+  buf.extend_from_slice(&block_hash.as_bytes().to_vec());
+  println!("db: {:?}", buf);
 
-        db.insert(transaction.hash.clone(), buf);
+  db.insert(transaction.hash.clone(), buf);
 
-        Ok(Response::new(transaction::Empty {}))
-    }
+  Ok(Response::new(transaction::Empty {}))
+}
 
     async fn find_transaction_by_hash(&self, request: Request<transaction::FindTransactionByHashRequest>) -> Result<Response<transaction::Transaction>, Status> {
       let request = request.into_inner();

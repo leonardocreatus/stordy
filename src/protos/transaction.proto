@@ -20,7 +20,7 @@ message Transaction {
   string hash = 8;
 }
 
-message AddTransactionRequest {
+message AddTransactionRequest { 
   string block_hash = 1;
   Transaction transaction = 2;
 }
