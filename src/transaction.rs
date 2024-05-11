@@ -35,9 +35,9 @@ impl TransactionService for Transaction {
         
         let request = request.into_inner();
         let transaction = request.transaction.unwrap();
-        let block_hash = request.block_hash;
-        let db = self.db_transaction.lock().unwrap();
-        let id = db.get(block_hash.clone());
+        let block_public_key = request.block_public_key;
+        let db = self.db_block.lock().unwrap();
+        let id = db.get(block_public_key.clone());
 
         if id.is_none() {
             return Err(Status::not_found("Block not found"));
@@ -82,7 +82,7 @@ impl TransactionService for Transaction {
         
         let mut buf = Vec::new();
         buf.extend_from_slice(&shift.to_be_bytes().to_vec());
-        buf.extend_from_slice(&block_hash.as_bytes().to_vec());
+        buf.extend_from_slice(&block_public_key.as_bytes().to_vec());
         println!("db: {:?}", buf);
 
         db.insert(transaction.hash.clone(), buf);
