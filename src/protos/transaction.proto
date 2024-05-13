@@ -20,15 +20,15 @@ message Transaction {
   string hash = 8;
 }
 
-message AddTransactionRequest { 
-  string block_hash = 1;
+message AddTransactionRequest {
+  string block_public_key = 1;
   Transaction transaction = 2;
 }
 
 message Empty {}
 
 message GetLastRequest{
-   string block_hash = 1;
+   string block_public_key = 1;
 }
 
 message FindTransactionByHashRequest {

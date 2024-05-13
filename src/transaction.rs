@@ -6,7 +6,7 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::fs;
 
-use crate::block::Block;
+use crate::block::{self, Block};
 
 use self::btree::BTree;
 
@@ -34,10 +34,16 @@ impl Transaction {
 #[tonic::async_trait]
 impl TransactionService for Transaction {
 
+
   async fn find_last_transaction(&self, request: Request<transaction::GetLastRequest>) -> Result<Response<transaction::Transaction>, Status>{
     let request = request.into_inner();
-    let db = self.db_transaction.lock().unwrap();
-    let id = db.get(request.block_hash.clone());
+    let block_public_key = request.block_public_key;
+    let db_block = self.db_block.lock().unwrap();
+    let id = db_block.get(block_public_key);
+    
+    if id.is_none() {
+      return Err(Status::not_found("Block not found"));
+  }
 
     let id = id.unwrap();
 
@@ -80,9 +86,9 @@ async fn add_transaction(&self, request: Request<transaction::AddTransactionRequ
         
   let request = request.into_inner();
   let transaction = request.transaction.unwrap();
-  let block_hash = request.block_hash;
-  let db = self.db_transaction.lock().unwrap();
-  let id = db.get(block_hash.clone());
+  let block_public_key = request.block_public_key;
+  let db = self.db_block.lock().unwrap();
+  let id = db.get(block_public_key.clone());
 
   if id.is_none() {
       return Err(Status::not_found("Block not found"));
@@ -127,7 +133,7 @@ async fn add_transaction(&self, request: Request<transaction::AddTransactionRequ
   
   let mut buf = Vec::new();
   buf.extend_from_slice(&shift.to_be_bytes().to_vec());
-  buf.extend_from_slice(&block_hash.as_bytes().to_vec());
+  buf.extend_from_slice(&block_public_key.as_bytes().to_vec());
   println!("db: {:?}", buf);
 
   db.insert(transaction.hash.clone(), buf);
