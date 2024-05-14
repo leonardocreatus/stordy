@@ -61,8 +61,7 @@ impl TransactionService for Transaction {
         }
 
         let mut buf = Vec::new();
-        let mut i = 0;
-        let two_bytes_of_transaction_size = loop {
+        for _ in 0..qtd {
           let mut buf_transaction = vec![];
           transaction.encode(&mut buf_transaction).unwrap();
 
@@ -73,54 +72,24 @@ impl TransactionService for Transaction {
           let transaction_size_buf = buf_transaction.len().to_be_bytes();
           let two_bytes_of_transaction_size = &transaction_size_buf.get(transaction_size_buf.len() - 2..).unwrap();
           
-
           buf.extend_from_slice(&two_bytes_of_transaction_size);
           buf.extend_from_slice(&buf_transaction);
+          buf.extend_from_slice(&two_bytes_of_transaction_size);
 
-          if i == qtd - 1 {
-              break two_bytes_of_transaction_size.to_vec();
-          }
-
-          i += 1;
         };
-
-        buf.extend_from_slice(&two_bytes_of_transaction_size);
-
         let id = id.unwrap();
         let filename = format!("blocks/{}", String::from_utf8(id).unwrap());
 
         let metadata = fs::metadata(filename.clone())?;
         let shift = metadata.len();
 
-        let mut reader = OpenOptions::new()
-            .read(true)
-            .open(filename.clone())
-            .unwrap();
-        let mut fbuf = Vec::new();
-        reader.read_to_end(&mut fbuf).unwrap();
-        
         let mut writer = OpenOptions::new()
-            // .read(true)
-            .write(true)
-            .create(true)
-            .truncate(true)
+            .append(true)
             .open(filename.clone())
             .unwrap();
 
-        
-
-        
-        
-        
-        fbuf.pop();
-        fbuf.pop();
-
-        println!("fbuf size: {}", fbuf.len());
-        println!("buf size: {}", buf.len());
-
-        fbuf.extend_from_slice(&buf);
-        writer.write_all(&fbuf).unwrap();
-        
+        writer.write_all(&buf).unwrap();
+       
         let mut buf = Vec::new();
         buf.extend_from_slice(&shift.to_be_bytes().to_vec());
         buf.extend_from_slice(&block_public_key.as_bytes().to_vec());

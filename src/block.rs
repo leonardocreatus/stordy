@@ -55,7 +55,7 @@ impl BlockService for Block {
 
     buf.extend_from_slice(&two_bytes_of_block_size);
     buf.extend_from_slice(&buf_block);
-    buf.extend_from_slice(&two_bytes_of_block_size);
+    // buf.extend_from_slice(&two_bytes_of_block_size);
 
     let res = fs::write(format!("blocks/{}", cuid), buf);
     if res.is_err() {
