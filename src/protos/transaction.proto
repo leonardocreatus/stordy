@@ -23,6 +23,7 @@ message Transaction {
 message AddTransactionRequest {
   string block_public_key = 1;
   Transaction transaction = 2;
+  optional int32 qtd = 3;
 }
 
 message Empty {}
