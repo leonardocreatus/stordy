@@ -83,6 +83,11 @@ async fn add_transaction(&self, request: Request<transaction::AddTransactionRequ
   let db = self.db_block.lock().unwrap();
   let id = db.get(block_public_key.clone());
 
+  let qtd = match request.qtd {
+    Some(x) => x,
+    None => 1
+  };
+
   if id.is_none() {
       return Err(Status::not_found("Block not found"));
   }
@@ -95,7 +100,9 @@ async fn add_transaction(&self, request: Request<transaction::AddTransactionRequ
   if exists_transaction {
       return Err(Status::already_exists("Transaction already exists"));
   }
-
+  
+  let mut buf = Vec::new();
+  for _ in 0..qtd {
   let mut buf_transaction = vec![];
   transaction.encode(&mut buf_transaction).unwrap();
 
@@ -106,9 +113,9 @@ async fn add_transaction(&self, request: Request<transaction::AddTransactionRequ
   let transaction_size_buf = buf_transaction.len().to_be_bytes();
   let first_two_bytes_of_transaction_size = &transaction_size_buf.get(transaction_size_buf.len() - 2..).unwrap();
 
-  let mut buf = Vec::new();
   buf.extend_from_slice(&first_two_bytes_of_transaction_size);
   buf.extend_from_slice(&buf_transaction);  
+  };
 
   let id = id.unwrap();
   let filename = format!("blocks/{}", String::from_utf8(id).unwrap());
