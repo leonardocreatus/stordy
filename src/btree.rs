@@ -25,6 +25,11 @@ impl BTree {
     }
   }
 
+  /*
+    BA TA1   TA2
+    BB    TB2
+   */
+
   pub fn get_last(&self) -> Option<(String, Vec<u8>)> {
     let last = self.db.iter().last();
     if !last.is_some() {
