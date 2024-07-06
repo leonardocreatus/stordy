@@ -37,10 +37,13 @@ impl TransactionService for Transaction {
         &self,
         request: Request<transaction::AddTransactionRequest>,
     ) -> Result<Response<transaction::Empty>, Status> {
+        println!("Add transaction");
         let request = request.into_inner();
         let transaction = request.transaction.unwrap();
         let block_public_key = request.block_public_key;
         let db_transaction = self.db_transaction.lock().unwrap();
+
+        print!("add transaction on public key {}", block_public_key.clone());
 
         let qtd = match request.qtd {
             Some(x) => x,
@@ -75,6 +78,14 @@ impl TransactionService for Transaction {
             let two_bytes_of_transaction_size = &transaction_size_buf
                 .get(transaction_size_buf.len() - 2..)
                 .unwrap();
+            println!(
+                "bytes {:?}, value: {:?}",
+                two_bytes_of_transaction_size,
+                u16::from_be_bytes([
+                    two_bytes_of_transaction_size[0],
+                    two_bytes_of_transaction_size[1]
+                ])
+            );
 
             buf.extend_from_slice(&two_bytes_of_transaction_size);
             buf.extend_from_slice(&buf_transaction);
@@ -109,7 +120,7 @@ impl TransactionService for Transaction {
         // let db_transaction = self.db_transaction.lock().unwrap();
         let db_block = self.db_block.lock().unwrap();
         let block_public_key = request.into_inner().block_public_key;
-        let block_id = db_block.get(block_public_key);
+        let block_id = db_block.get(block_public_key.clone());
 
         if block_id.is_none() {
             return Err(Status::not_found("Block not found"));
@@ -127,6 +138,7 @@ impl TransactionService for Transaction {
             String::from_utf8(block_id.clone().expect("REASON")).unwrap()
         );
 
+        // println!("find last transaction {:}", block_public_key.clone());
         //texto da documentação do FILE
         // An object providing access to an open file on the filesystem.
         // An instance of a File can be read and/or written depending on what options it was opened with.
@@ -139,6 +151,17 @@ impl TransactionService for Transaction {
         let mut arquivo = fs::File::open(&filename)?;
         //pega o tamanho do arquivo para poder ver quanto devemos voltar para pegar a ultima transacao
         let tamanho_arquivo = arquivo.metadata()?.len();
+
+        arquivo.seek(io::SeekFrom::Start(0))?;
+        let mut buffer = [0; 2];
+        // le os primeiros 2 bytes do arquivo para o buffer
+        arquivo.read_exact(&mut buffer)?;
+        let size_header = u16::from_be_bytes(buffer);
+
+        if (size_header + 2) as u64 == tamanho_arquivo {
+            return Err(Status::not_found("Block is empty"));
+        }
+
         // move o cursor para 2 bytes antes do final do arquivo
         arquivo.seek(io::SeekFrom::End(-2))?;
         let mut buffer = [0; 2];
@@ -193,6 +216,44 @@ impl TransactionService for Transaction {
         .unwrap();
 
         Ok(Response::new(transaction))
+    }
+
+    async fn find_all_transactions(
+        &self,
+        request: Request<transaction::FindAllTransactionsRequest>,
+    ) -> Result<Response<transaction::FindAllTransactionsReply>, Status> {
+        let db = self.db_block.lock().unwrap();
+        let request = request.into_inner();
+        let block_id = db.get(request.block_public_key.clone());
+
+        if block_id.is_none() {
+            return Err(Status::not_found("Block not found"));
+        }
+
+        let filename = format!("blocks/{}", String::from_utf8(block_id.unwrap()).unwrap());
+        let buf = fs::read(filename).unwrap();
+
+        let mut transactions: Vec<transaction::Transaction> = Vec::new();
+
+        let mut it = 0;
+        let mut is_block = true;
+        while it < buf.len() {
+            let transaction_size = u16::from_be_bytes([buf[it], buf[it + 1]]);
+            if is_block {
+                is_block = false;
+                it += transaction_size as usize + 2;
+                continue;
+            }
+            let transaction =
+                transaction::Transaction::decode(&buf[it + 2..transaction_size as usize + it + 2])
+                    .unwrap();
+            transactions.push(transaction);
+            it += transaction_size as usize + 4;
+        }
+
+        let response = transaction::FindAllTransactionsReply { transactions };
+
+        Ok(Response::new(response))
     }
 
     async fn exists_transaction_on_block(

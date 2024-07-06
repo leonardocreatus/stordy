@@ -7,6 +7,7 @@ service TransactionService {
   rpc FindTransactionByHash(FindTransactionByHashRequest) returns (Transaction) {}
   rpc ExistsTransactionOnBlock(ExistsTransactionOnBlockRequet) returns (ExistsTransactionOnBlockReply) {}
   rpc FindLastTransaction(FindLastTransactionRequest) returns (Transaction) {}
+  rpc FindAllTransactions(FindAllTransactionsRequest) returns (FindAllTransactionsReply) {}
 }
 
 message Transaction {
@@ -18,6 +19,14 @@ message Transaction {
   uint32 nonce = 6;
   string identification = 7;
   string hash = 8;
+}
+
+message FindAllTransactionsRequest {
+  string block_public_key = 1;
+}
+
+message FindAllTransactionsReply {
+  repeated Transaction transactions = 1;
 }
 
 message AddTransactionRequest {
@@ -44,6 +53,3 @@ message ExistsTransactionOnBlockReply {
 message FindLastTransactionRequest {
   string block_public_key = 1;
 }
-
-
-
