@@ -37,7 +37,7 @@ impl TransactionService for Transaction {
         &self,
         request: Request<transaction::AddTransactionRequest>,
     ) -> Result<Response<transaction::Empty>, Status> {
-        println!("Add transaction");
+        // println!("Add transaction");
         let request = request.into_inner();
         let transaction = request.transaction.unwrap();
         let block_public_key = request.block_public_key;
@@ -45,7 +45,7 @@ impl TransactionService for Transaction {
 
         let db_transaction = self.db_transaction.lock().unwrap();
 
-        print!("add transaction on public key {}", block_public_key.clone());
+        // print!("add transaction on public key {}", block_public_key.clone());
 
         let qtd = match request.qtd {
             Some(x) => x,
@@ -55,7 +55,7 @@ impl TransactionService for Transaction {
         let id = db.get(block_public_key.clone());
 
         if id.is_none() {
-            println!("Block not found");
+            // println!("Block not found");
             return Err(Status::not_found("Block not found"));
         }
 
@@ -81,14 +81,14 @@ impl TransactionService for Transaction {
             let two_bytes_of_transaction_size = &transaction_size_buf
                 .get(transaction_size_buf.len() - 2..)
                 .unwrap();
-            println!(
-                "bytes {:?}, value: {:?}",
-                two_bytes_of_transaction_size,
-                u16::from_be_bytes([
-                    two_bytes_of_transaction_size[0],
-                    two_bytes_of_transaction_size[1]
-                ])
-            );
+            // println!(
+            //     "bytes {:?}, value: {:?}",
+            //     two_bytes_of_transaction_size,
+            //     u16::from_be_bytes([
+            //         two_bytes_of_transaction_size[0],
+            //         two_bytes_of_transaction_size[1]
+            //     ])
+            // );
 
             buf.extend_from_slice(&two_bytes_of_transaction_size);
             buf.extend_from_slice(&buf_transaction);
@@ -212,7 +212,7 @@ impl TransactionService for Transaction {
         let buf = fs::read(filename).unwrap();
 
         let transaction_size = u16::from_be_bytes([buf[shift as usize], buf[shift as usize + 1]]);
-        println!("transaction_size: {}", transaction_size);
+        // println!("transaction_size: {}", transaction_size);
         let transaction = transaction::Transaction::decode(
             &buf[shift as usize + 2..transaction_size as usize + shift as usize + 2],
         )

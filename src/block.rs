@@ -2,6 +2,7 @@ use crate::transaction::btree::BTree;
 use block::block_service_server::BlockService;
 use itertools::Itertools;
 use prost::Message;
+use std::io::{Read, Seek};
 use std::sync::{Arc, Mutex};
 use std::{fs, vec};
 use tonic::{Request, Response, Status};
@@ -33,7 +34,7 @@ impl BlockService for Block {
     ) -> Result<Response<block::Empty>, Status> {
         let block = request.into_inner();
 
-        println!("Received block: {:?}", block);
+        // println!("Received block: {:?}", block);
 
         if block.public_key.is_empty() {
             return Err(Status::invalid_argument("Public key is empty"));
@@ -46,8 +47,8 @@ impl BlockService for Block {
         }
 
         let uuid = Uuid::now_v7();
-        println!("UUID: {:?}", uuid.clone().to_string());
-        println!("UUID: {:?}", uuid.clone().to_string().as_bytes().to_vec());
+        // println!("UUID: {:?}", uuid.clone().to_string());
+        // println!("UUID: {:?}", uuid.clone().to_string().as_bytes().to_vec());
         db.insert(block.public_key.clone(), uuid.to_string().as_bytes().to_vec());
 
         let mut buf_block = vec![];
@@ -88,7 +89,7 @@ impl BlockService for Block {
 
         let id = id.unwrap();
 
-        println!("ID: {}", String::from_utf8(id.clone()).unwrap());
+        // println!("ID: {}", String::from_utf8(id.clone()).unwrap());
         let buf = fs::read(format!("blocks/{}", String::from_utf8(id).unwrap())).unwrap();
         let block_size = u16::from_be_bytes([buf[0], buf[1]]);
         let block = block::Block::decode(&buf[2..block_size as usize + 2]).unwrap();
@@ -98,11 +99,41 @@ impl BlockService for Block {
 
     async fn length_block(
         &self,
-        _: Request<block::LengthRequest>,
+        request: Request<block::LengthRequest>,
     ) -> Result<Response<block::LengthReply>, Status> {
-        let length = 0;
-        let response = block::LengthReply { length };
+        let request = request.into_inner();
+        let public_key = request.public_key;
 
+        let db = self.db_block.lock().unwrap();
+        let id = db.get(public_key.clone());
+
+        if id.is_none() {
+            return Err(Status::not_found("Block not found"));
+        }
+
+        let id = id.unwrap();
+        let filename = format!("blocks/{}", String::from_utf8(id).unwrap());
+
+        let mut length = 0;
+
+        let mut file = fs::File::open(&filename).unwrap();
+        let size_of_file = file.metadata()?.len();
+        file.seek(std::io::SeekFrom::Start(0)).unwrap();
+        let mut size_of_header_buf = [0;2];
+        file.read_exact(&mut size_of_header_buf).unwrap();
+        let size_of_header = u16::from_be_bytes(size_of_header_buf);
+        let mut pointer = size_of_header + 2;
+        while pointer < size_of_file as u16 {
+            file.seek(std::io::SeekFrom::Start(pointer as u64)).unwrap();
+            let mut size_of_transaction_buf = [0;2];
+            file.read_exact(&mut size_of_transaction_buf).unwrap();
+            let size_of_transaction = u16::from_be_bytes(size_of_transaction_buf);
+            pointer += size_of_transaction + 4;
+            length += 1;
+        }
+
+        let response = block::LengthReply { length };
+        // println!("Length Block: {:?}", response);
         Ok(Response::new(response))
     }
 
@@ -166,7 +197,7 @@ impl BlockService for Block {
         let iter = db.iter();
         for block in iter {
             let block = block.unwrap();
-            println!("Block: {:?}", block);
+            // println!("Block: {:?}", block);
             let id = String::from_utf8(block.1.to_vec()).unwrap();
             // println!("ID: {}", id);
             let buf = fs::read(format!("blocks/{}", id)).unwrap();
