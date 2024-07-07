@@ -41,6 +41,8 @@ impl TransactionService for Transaction {
         let request = request.into_inner();
         let transaction = request.transaction.unwrap();
         let block_public_key = request.block_public_key;
+
+
         let db_transaction = self.db_transaction.lock().unwrap();
 
         print!("add transaction on public key {}", block_public_key.clone());
@@ -53,6 +55,7 @@ impl TransactionService for Transaction {
         let id = db.get(block_public_key.clone());
 
         if id.is_none() {
+            println!("Block not found");
             return Err(Status::not_found("Block not found"));
         }
 
