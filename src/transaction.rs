@@ -37,15 +37,12 @@ impl TransactionService for Transaction {
         &self,
         request: Request<transaction::AddTransactionRequest>,
     ) -> Result<Response<transaction::Empty>, Status> {
-        // println!("Add transaction");
         let request = request.into_inner();
-        let transaction = request.transaction.unwrap();
+        let mut transaction = request.transaction.unwrap();
         let block_public_key = request.block_public_key;
 
 
         let db_transaction = self.db_transaction.lock().unwrap();
-
-        // print!("add transaction on public key {}", block_public_key.clone());
 
         let qtd = match request.qtd {
             Some(x) => x,
@@ -55,7 +52,6 @@ impl TransactionService for Transaction {
         let id = db.get(block_public_key.clone());
 
         if id.is_none() {
-            // println!("Block not found");
             return Err(Status::not_found("Block not found"));
         }
 
@@ -69,8 +65,10 @@ impl TransactionService for Transaction {
         }
 
         let mut buf = Vec::new();
-        for _ in 0..qtd {
+        
+        for i in 0..qtd {
             let mut buf_transaction = vec![];
+            transaction.index += i as u32;
             transaction.encode(&mut buf_transaction).unwrap();
 
             if buf_transaction.len() > 2u32.pow(16).try_into().unwrap() {
@@ -81,14 +79,6 @@ impl TransactionService for Transaction {
             let two_bytes_of_transaction_size = &transaction_size_buf
                 .get(transaction_size_buf.len() - 2..)
                 .unwrap();
-            // println!(
-            //     "bytes {:?}, value: {:?}",
-            //     two_bytes_of_transaction_size,
-            //     u16::from_be_bytes([
-            //         two_bytes_of_transaction_size[0],
-            //         two_bytes_of_transaction_size[1]
-            //     ])
-            // );
 
             buf.extend_from_slice(&two_bytes_of_transaction_size);
             buf.extend_from_slice(&buf_transaction);
