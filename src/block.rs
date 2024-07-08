@@ -133,7 +133,7 @@ impl BlockService for Block {
         }
 
         let response = block::LengthReply { length };
-        // println!("Length Block: {:?}", response);
+        
         Ok(Response::new(response))
     }
 

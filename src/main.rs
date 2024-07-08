@@ -13,7 +13,7 @@ use transaction::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "[::1]:50052".parse()?;
+    let addr = "0.0.0.0:50052".parse()?;
 
     let btree_blocks = Arc::new(Mutex::new(BTree::new("blocks")));
     let btree_transactions = Arc::new(Mutex::new(BTree::new("transactions")));
