@@ -68,7 +68,7 @@ impl TransactionService for Transaction {
         
         for i in 0..qtd {
             let mut buf_transaction = vec![];
-            transaction.index += i as u32;
+            transaction.index += 1 as u32;
             transaction.encode(&mut buf_transaction).unwrap();
 
             if buf_transaction.len() > 2u32.pow(16).try_into().unwrap() {

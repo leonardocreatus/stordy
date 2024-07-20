@@ -122,13 +122,13 @@ impl BlockService for Block {
         let mut size_of_header_buf = [0;2];
         file.read_exact(&mut size_of_header_buf).unwrap();
         let size_of_header = u16::from_be_bytes(size_of_header_buf);
-        let mut pointer = size_of_header + 2;
-        while pointer < size_of_file as u16 {
+        let mut pointer = u64::from(size_of_header + 2);
+        while pointer < size_of_file {
             file.seek(std::io::SeekFrom::Start(pointer as u64)).unwrap();
             let mut size_of_transaction_buf = [0;2];
             file.read_exact(&mut size_of_transaction_buf).unwrap();
             let size_of_transaction = u16::from_be_bytes(size_of_transaction_buf);
-            pointer += size_of_transaction + 4;
+            pointer += u64::from(size_of_transaction + 4);
             length += 1;
         }
 
