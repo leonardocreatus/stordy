@@ -21,4 +21,4 @@ set ytics 1
 set style line 1 lc rgb '#0060ad' lt 1 lw 2  # Purple line, dotted, width 2
 
 # Load data from file and plot
-plot "dados.txt" using 1:6 with lines linestyle 1 title "Transaction Time"
+plot "data.txt" using 1:6 with lines linestyle 1 title "Transaction Time"

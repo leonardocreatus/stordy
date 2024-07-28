@@ -24,5 +24,5 @@ set style line 1 lc rgb '#dd181f' lt 1 lw 1.5 pt 7 ps 1.5  # Red line, solid, wi
 set style line 2 lc rgb '#0060ad' lt 1 lw 1.5 pt 5 ps 1.5  # Blue line, solid, width 1.5, point 5 (square), point size 1.5
 
 # Load data from file and plot
-plot "dados.txt" using 1:3 with linespoints linestyle 1 title "Speedychain w/o Stordy", \
-     "dados.txt" using 1:($2+$4) with linespoints linestyle 2 title "Speedychain with Stordy + Stordy"
+plot "data.txt" using 1:3 with linespoints linestyle 1 title "Speedychain w/o Stordy", \
+     "data.txt" using 1:($2+$4) with linespoints linestyle 2 title "Speedychain with Stordy + Stordy"
