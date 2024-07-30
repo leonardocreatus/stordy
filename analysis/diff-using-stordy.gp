@@ -2,10 +2,11 @@
 set datafile separator tab
 
 # Basic chart settings
-set title "Speedychain Size Growth"
-set xlabel "Number of Transactions"
-set ylabel "Size (MB)"
+set title "Speedychain Size Growth" font ",18"
+set xlabel "Number of Transactions" font ",16"
+set ylabel "Size (MB)" font ",16"
 set key left top
+set key font ",16"
 set grid
 
 # Settings for the x-axis (logarithmic for better visualization)
